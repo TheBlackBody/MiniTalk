@@ -21,8 +21,6 @@ FTPRINTF_PRINTF = $(addprefix $(PRINTF_PATH), $(PRINTF_FILE))
 
 SRCCL_FILES	=	client
 SRCSV_FILES	=	server
-SRCBC_FILES	=	client_bonus
-SRCBS_FILES	=	server_bonus
 
 SRCCL 		= 	$(addprefix $(SRC_DIR), $(addsuffix .c, $(SRCCL_FILES)))
 OBJCL 		= 	$(addprefix $(OBJ_DIR), $(addsuffix .o, $(SRCCL_FILES)))

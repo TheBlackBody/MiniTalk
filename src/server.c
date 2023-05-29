@@ -1,46 +1,64 @@
+
 #include "../minitalk.h"
 
-void ft_handler(int signal)
+void	error(int pid, char *str)
 {
-	static int	bit;
-	static int	i;
-
-	if (signal == SIGUSR1)
-		i |= (0x01 << bit);
-	bit++;
-	if (bit == 8)
-	{
-		ft_printf("%c", i);
-		bit = 0;
-		i = 0;
-	}
+	if (str)
+		free(str);
+	ft_printf("unexpected error \n");
+	kill(pid, SIGUSR2);
+	exit(EXIT_FAILURE);
 }
 
-int main(int argc, char **argv)
+char	*print_string(char *message)
 {
-	int	pid;
-	
-	pid = 0;
-	(void)argv;
-	if (argc != 1)
+	ft_printf("%s\n", message);
+	free(message);
+	return (NULL);
+}
+
+void	handler_sigusr(int signum, siginfo_t *info, void *context)
+{
+	static char	c = 0xFF;
+	static int	bits = 0;
+	static int	pid = 0;
+	static char	*message = 0;
+
+	(void)context;
+	if (info->si_pid)
+		pid = info->si_pid;
+	if (signum == SIGUSR1)
+		c ^= 0x80 >> bits;
+	else if (signum == SIGUSR2)
+		c |= 0x80 >> bits;
+	if (++bits == 8)
 	{
-		ft_printf("Error: Wrong formats\n");
-		ft_printf("Try ./serveur");
-		return (0);
+		if (c)
+			message = ft_stradd_c(message, c);
+		else
+			message = print_string(message);
+		bits = 0;
+		c = 0xFF;
 	}
-	pid = getpid();
-	if (pid == 0)
-	{
-		ft_printf("Error: No PID was define\n");
-		return (0);
-	}
-	ft_printf("PID: %d \n", pid);
-	ft_printf("Waiting for a message !\n");
-	while (argc == 1)
-	{
-		signal(SIGUSR1, ft_handler);
-		signal(SIGUSR2, ft_handler);
-		pause ();
-	}
-	return (0);
+	if (kill(pid, SIGUSR1) == -1)
+		error(pid, message);
+}
+
+int	main(void)
+{
+	struct sigaction	sa_signal;
+	sigset_t			block_mask;
+
+	sigemptyset(&block_mask);
+	sigaddset(&block_mask, SIGINT);
+	sigaddset(&block_mask, SIGQUIT);
+	sa_signal.sa_handler = 0;
+	sa_signal.sa_flags = SA_SIGINFO;
+	sa_signal.sa_mask = block_mask;
+	sa_signal.sa_sigaction = handler_sigusr;
+	sigaction(SIGUSR1, &sa_signal, NULL);
+	sigaction(SIGUSR2, &sa_signal, NULL);
+	ft_printf("PID: %i \nWaiting message ...\n", getpid());
+	while (1)
+		pause();
 }
